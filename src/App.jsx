@@ -8,9 +8,9 @@ const MathTrainerApp = () => {
     feedbackStyle: "encouraging",
     voiceURI: "",
     speechRate: 0.9,
-    autoPlayNext: false,
+    autoPlayNext: true,
     showEquation: true,
-    kopfrechnenMode: false,
+    kopfrechnenMode: true,
   });
 
   const [mode, setMode] = useState("menu"); // menu, practice, quiz, results
@@ -33,11 +33,17 @@ const MathTrainerApp = () => {
       );
       setAvailableVoices(germanVoices);
 
-      // Set default voice if not set
-      if (!settings.voiceURI && germanVoices.length > 0) {
+      // Always try to use Google Deutsch voice
+      const googleGermanVoice = voices.find(
+        (voice) => voice.name.includes("Google") && voice.lang.startsWith("de")
+      );
+      const fallbackGermanVoice = germanVoices[0];
+      const selectedVoice = googleGermanVoice || fallbackGermanVoice;
+
+      if (selectedVoice) {
         setSettings((prev) => ({
           ...prev,
-          voiceURI: germanVoices[0].voiceURI,
+          voiceURI: selectedVoice.voiceURI,
         }));
       }
     };
@@ -428,50 +434,6 @@ const MathTrainerApp = () => {
                       </button>
                     ))}
                   </div>
-                </div>
-
-                <div>
-                  <label className='block text-sm font-semibold mb-2 text-gray-700'>
-                    Stimme
-                  </label>
-                  <select
-                    value={settings.voiceURI}
-                    onChange={(e) =>
-                      setSettings({ ...settings, voiceURI: e.target.value })
-                    }
-                    className='w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500'
-                  >
-                    {availableVoices.length === 0 ? (
-                      <option>Laden...</option>
-                    ) : (
-                      availableVoices.map((voice) => (
-                        <option key={voice.voiceURI} value={voice.voiceURI}>
-                          {voice.name} ({voice.lang})
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  <button
-                    onClick={() => {
-                      const utterance = new SpeechSynthesisUtterance(
-                        "Hallo! Das ist meine Stimme."
-                      );
-                      utterance.lang = "de-DE";
-                      utterance.rate = settings.speechRate;
-                      if (settings.voiceURI) {
-                        const voices = window.speechSynthesis.getVoices();
-                        const selectedVoice = voices.find(
-                          (v) => v.voiceURI === settings.voiceURI
-                        );
-                        if (selectedVoice) utterance.voice = selectedVoice;
-                      }
-                      window.speechSynthesis.cancel();
-                      window.speechSynthesis.speak(utterance);
-                    }}
-                    className='mt-2 w-full py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition text-sm font-semibold'
-                  >
-                    🔊 Stimme testen
-                  </button>
                 </div>
 
                 <div>
