@@ -66,9 +66,6 @@
           operation: "+",
           difficulty: "medium",
           feedbackStyle: "encouraging",
-          voiceEngine: "neural",
-          speechRate: 0.9,
-          autoPlayNext: false,
           showEquation: true,
           kopfrechnenMode: false,
           usePuterTTS: true,
@@ -83,20 +80,8 @@
         const [quizIndex, setQuizIndex] = useState(0);
         const [showSettings, setShowSettings] = useState(false);
         const [availableVoices, setAvailableVoices] = useState([]);
-        const [puterReady, setPuterReady] = useState(false);
         const inputRef = React.useRef(null);
 
-        // Check if Puter.js is loaded
-        useEffect(() => {
-          const checkPuter = setInterval(() => {
-            if (window.puter && window.puter.ai) {
-              setPuterReady(true);
-              clearInterval(checkPuter);
-            }
-          }, 100);
-
-          return () => clearInterval(checkPuter);
-        }, []);
 
         // Load available voices (for fallback browser TTS)
         useEffect(() => {
@@ -251,30 +236,6 @@
             operationWords[problem.operation]
           } ${problem.num2}?`;
 
-          // Use Puter.js if available and enabled
-          if (settings.usePuterTTS && window.puter && window.puter.ai) {
-            try {
-              const audio = await window.puter.ai.txt2speech(text, {
-                language: "de-DE",
-                engine: settings.voiceEngine,
-              });
-
-              audio.onended = () => {
-                if (inputRef && inputRef.current) {
-                  inputRef.current.focus();
-                }
-              };
-
-              audio.play();
-              return;
-            } catch (error) {
-              console.error("Puter TTS error:", error);
-              // Fall back to browser TTS
-            }
-          }
-
-          // Fallback to browser Web Speech API
-          if ("speechSynthesis" in window) {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = "de-DE";
             utterance.rate = settings.speechRate;
@@ -299,30 +260,6 @@
             /[🌟🎉⭐💪🌈😊🎯✓✗👑🎈🎊🚀🐰🐸🦊🐻📚📝✏️📖🤔📐🔢📏]/g,
             ""
           );
-
-          // Use Puter.js if available and enabled
-          if (settings.usePuterTTS && window.puter && window.puter.ai) {
-            try {
-              const audio = await window.puter.ai.txt2speech(cleanText, {
-                language: "de-DE",
-                engine: settings.voiceEngine,
-              });
-
-              if (settings.autoPlayNext) {
-                audio.onended = () => {
-                  setTimeout(() => {
-                    nextQuestion();
-                  }, 1500);
-                };
-              }
-
-              audio.play();
-              return;
-            } catch (error) {
-              console.error("Puter TTS error:", error);
-              // Fall back to browser TTS
-            }
-          }
 
           // Fallback to browser Web Speech API
           if ("speechSynthesis" in window) {
@@ -547,56 +484,6 @@
                           ))}
                         </div>
                       </div>
-
-                      <div>
-                        <label className='block text-sm font-semibold mb-2 text-gray-700'>
-                          Stimmen-Engine
-                        </label>
-                        <select
-                          value={settings.voiceEngine}
-                          onChange={(e) =>
-                            setSettings({
-                              ...settings,
-                              voiceEngine: e.target.value,
-                            })
-                          }
-                          className='w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500'
-                        >
-                          <option value='standard'>Standard (schnell)</option>
-                          <option value='neural'>Neural (besser)</option>
-                          <option value='generative'>
-                            Generative (am besten)
-                          </option>
-                        </select>
-                        <p className='text-xs text-gray-500 mt-1'>
-                          {puterReady
-                            ? "✓ Premium-Stimmen verfügbar"
-                            : "⏳ Premium-Stimmen laden..."}
-                        </p>
-                        <button
-                          onClick={async () => {
-                            if (window.puter && window.puter.ai) {
-                              const audio = await window.puter.ai.txt2speech(
-                                "Hallo! Das ist meine Stimme.",
-                                {
-                                  language: "de-DE",
-                                  engine: settings.voiceEngine,
-                                }
-                              );
-                              audio.play();
-                            }
-                          }}
-                          disabled={!puterReady}
-                          className='mt-2 w-full py-2 bg-blue-100 hover:bg-blue-200 disabled:bg-gray-100 text-blue-700 disabled:text-gray-400 rounded-lg transition text-sm font-semibold'
-                        >
-                          🔊 Stimme testen
-                        </button>
-                      </div>
-
-                      <div>
-                        <label className='block text-sm font-semibold mb-2 text-gray-700'>
-                          Sprechgeschwindigkeit:{" "}
-                          {settings.speechRate.toFixed(1)}x
                         </label>
                         <input
                           type='range'
