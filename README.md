@@ -1,43 +1,88 @@
-# Kopfrechnen Trainer v0.0.1
+# Kopfrechnen Trainer v1.0.0
 
-Mathematik-Übungs-App für Grundschule Op de Host
+Ein interaktiver Mathe-Trainer mit Sprachausgabe für Kinder und Erwachsene. Die App hilft beim Üben der Grundrechenarten (Addition, Subtraktion, Multiplikation, Division) mit verschiedenen Schwierigkeitsgraden.
+
+## Installation und Entwicklung
+
+```bash
+# Dependencies installieren
+npm install
+
+# Entwicklungsserver starten
+npm run dev
+
+# Für Produktion bauen
+npm run build
+
+# Build-Vorschau
+npm run preview
+```
 
 ## Deployment auf Netlify
 
-### Schnellste Methode (Drag & Drop):
+### Option 1: Drag & Drop
 
-1. Erstelle einen Ordner `kopfrechnen-trainer`
-2. Kopiere `index.html` in diesen Ordner
-3. Gehe zu [app.netlify.com/drop](https://app.netlify.com/drop)
-4. Ziehe den kompletten Ordner auf die Seite
-5. Fertig! Du bekommst eine URL
+1. `npm run build` ausführen
+2. Den `dist` Ordner auf [netlify.com](https://netlify.com) ziehen
 
-### Mit Git/GitHub:
+### Option 2: Git Integration
 
-1. Erstelle ein GitHub Repository
-2. Upload `index.html` und `netlify.toml`
-3. Gehe zu [netlify.com](https://netlify.com)
-4. "Add new site" → "Import an existing project"
-5. Wähle dein Repository
-6. Deploy!
+1. Repository auf GitHub/GitLab pushen
+2. Auf Netlify mit Git verbinden
+3. Build-Einstellungen werden automatisch aus `netlify.toml` gelesen
+
+### Option 3: Netlify CLI
+
+```bash
+# Netlify CLI installieren
+npm install -g netlify-cli
+
+# Einloggen
+netlify login
+
+# Deployen
+netlify deploy --prod
+```
 
 ## Features
 
-- ✅ Kopfrechnen üben (Addition, Subtraktion, Multiplikation, Division)
-- ✅ Hochwertige Text-to-Speech mit Puter.js
-- ✅ Übungsmodus & Quiz-Modus
-- ✅ 3 Schwierigkeitsstufen
-- ✅ 4 Feedback-Stile
-- ✅ Statistik-Tracking
-- ✅ Responsive Design
+- 🎯 **Übungsmodus**: Endloses Üben mit sofortigem Feedback
+- 🏆 **Quiz-Modus**: 10 Fragen mit Bewertung
+- 🔊 **Text-to-Speech**: Deutsche Sprachausgabe mit Web Speech API
+- ⚙️ **Anpassbare Einstellungen**:
+  - Rechenarten: +, -, ×, ÷
+  - Schwierigkeitsgrade: Leicht, Mittel, Schwer
+  - Verschiedene Feedback-Stile
+  - Sprechgeschwindigkeit anpassbar
+  - Kopfrechnen-Modus (nur Audio)
+- 📱 **Responsive Design**: Funktioniert auf Desktop und Mobile
+- 🎨 **Kinderfreundliches Design**: Bunte Farben und Emojis
 
 ## Technologie
 
-- React (CDN)
-- Tailwind CSS
-- Puter.js für TTS
-- Lucide Icons
+- **React 18** mit Hooks
+- **Vite** als Build-Tool
+- **Lucide React** für Icons
+- **Web Speech API** für Text-to-Speech (ersetzt puter.js)
+- **CSS** mit Utility-Classes
+
+## Browser-Kompatibilität
+
+Die App nutzt die Web Speech API für Text-to-Speech. Unterstützte Browser:
+
+- ✅ Chrome/Chromium (beste Unterstützung)
+- ✅ Edge
+- ✅ Safari (iOS/macOS)
+- ⚠️ Firefox (eingeschränkte TTS-Unterstützung)
+
+## Verwendung
+
+1. **Einstellungen anpassen**: Rechenart, Schwierigkeit und Feedback-Stil wählen
+2. **Stimme testen**: Deutsche Stimme auswählen und testen
+3. **Modus wählen**: Übungsmodus für endloses Üben oder Quiz für 10 Fragen
+4. **Aufgabe anhören**: Auf den Lautsprecher-Button klicken
+5. **Antwort eingeben**: Zahl eingeben und Enter drücken oder Button klicken
 
 ## Version
 
-0.0.1 - Erste Test-Version für GS Op de Host
+1.0.0 - Vollständige React-App mit Standard Web Speech API
