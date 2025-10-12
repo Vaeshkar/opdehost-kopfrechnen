@@ -386,7 +386,15 @@ const MathTrainerApp = () => {
       correctAnswer: currentProblem.answer,
     });
 
-    speakFeedback(message, isCorrect);
+    // In level practice, we always advance, so give appropriate feedback
+    if (mode === "level-practice") {
+      const encouragingMessage = isCorrect
+        ? message
+        : `${message} Weiter zur nächsten Aufgabe!`;
+      speakFeedback(encouragingMessage, isCorrect);
+    } else {
+      speakFeedback(message, isCorrect);
+    }
 
     if (mode === "practice") {
       setScore((prev) => ({
@@ -425,9 +433,12 @@ const MathTrainerApp = () => {
         setFeedback(null);
         setTimeout(() => speakProblem(nextProblem, inputRef), 300);
       } else {
-        // Level completed - check if all answers were correct
-        if (levelScore.correct + 1 === levelProblems.length) {
-          // +1 because we need to include the current correct answer
+        // Level completed - check if 80% or more answers were correct
+        const finalScore = levelScore.correct + (feedback?.isCorrect ? 1 : 0);
+        const accuracy = (finalScore / levelProblems.length) * 100;
+
+        if (accuracy >= 80) {
+          // Level passed with 80% or better
           const completionData = levelSystem.completeLevel(currentLevelId);
           setLevelCompleteData(completionData);
           setShowLevelComplete(true);
@@ -872,17 +883,17 @@ const MathTrainerApp = () => {
                 <Volume2 size={24} />
               </button>
               {settings.kopfrechnenMode ? (
-                <div className='text-5xl font-bold text-purple-600'>
+                <div className='text-7xl font-bold text-purple-600'>
                   Kopfrechnen
                 </div>
               ) : settings.showEquation ? (
-                <div className='text-5xl font-bold text-gray-800'>
+                <div className='text-7xl font-bold text-gray-800'>
                   {currentProblem.num1}{" "}
                   {operationSymbols[currentProblem.operation]}{" "}
                   {currentProblem.num2} = ?
                 </div>
               ) : (
-                <div className='text-3xl font-bold text-gray-500 italic'>
+                <div className='text-5xl font-bold text-gray-500 italic'>
                   Gut zuhören! 👂
                 </div>
               )}
@@ -898,7 +909,7 @@ const MathTrainerApp = () => {
               onKeyPress={handleKeyPress}
               placeholder='Deine Antwort...'
               disabled={feedback !== null}
-              className='w-full p-4 text-3xl text-center border-4 border-purple-300 rounded-xl focus:outline-none focus:border-purple-500 disabled:bg-gray-100'
+              className='w-full p-6 text-5xl text-center border-4 border-purple-300 rounded-xl focus:outline-none focus:border-purple-500 disabled:bg-gray-100'
             />
           </div>
 
@@ -906,7 +917,7 @@ const MathTrainerApp = () => {
             <button
               onClick={checkAnswer}
               disabled={!userAnswer}
-              className='w-full py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl font-bold text-xl transition shadow-lg disabled:cursor-not-allowed'
+              className='w-full py-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl font-bold text-2xl transition shadow-lg disabled:cursor-not-allowed'
             >
               Antwort prüfen
             </button>
@@ -919,11 +930,11 @@ const MathTrainerApp = () => {
                     : "bg-gradient-to-r from-red-100 to-red-200 border-4 border-red-400"
                 }`}
               >
-                <p className='text-2xl font-bold mb-2'>{feedback.message}</p>
+                <p className='text-4xl font-bold mb-4'>{feedback.message}</p>
                 {!feedback.isCorrect && (
-                  <p className='text-lg'>
+                  <p className='text-2xl'>
                     Die richtige Antwort ist:{" "}
-                    <span className='font-bold text-2xl'>
+                    <span className='font-bold text-4xl'>
                       {feedback.correctAnswer}
                     </span>
                   </p>
@@ -932,7 +943,7 @@ const MathTrainerApp = () => {
 
               <button
                 onClick={nextQuestion}
-                className='w-full py-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl font-bold text-xl transition shadow-lg flex items-center justify-center gap-2'
+                className='w-full py-6 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl font-bold text-2xl transition shadow-lg flex items-center justify-center gap-2'
               >
                 {mode === "quiz" && quizIndex === quizQuestions.length - 1 ? (
                   <>Ergebnisse anzeigen</>
@@ -955,10 +966,10 @@ const MathTrainerApp = () => {
             {mode === "level-practice" ? (
               <div>
                 <div className='flex justify-between items-center mb-2'>
-                  <span className='text-gray-600'>
+                  <span className='text-lg font-semibold text-gray-700'>
                     Aufgabe {levelProblemIndex + 1} von {levelProblems.length}
                   </span>
-                  <span className='text-gray-600'>
+                  <span className='text-lg font-semibold text-gray-700'>
                     Richtig: {levelScore.correct} | Gesamt: {levelScore.total}
                   </span>
                 </div>
@@ -972,8 +983,8 @@ const MathTrainerApp = () => {
                     }}
                   ></div>
                 </div>
-                <p className='text-center text-sm text-gray-500 mt-2'>
-                  Alle Aufgaben müssen richtig sein um das Level zu schaffen!
+                <p className='text-center text-base font-medium text-gray-600 mt-2'>
+                  80% richtige Antworten sind nötig um das Level zu schaffen!
                 </p>
               </div>
             ) : (
