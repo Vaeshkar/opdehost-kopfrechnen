@@ -776,12 +776,12 @@ const MathTrainerApp = () => {
       <div className='min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 p-8 flex items-center justify-center'>
         <div className='bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center'>
           <h2 className='text-3xl font-bold mb-4 text-green-600'>
-            Level geschafft! 🎉
+            Stufe geschafft! 🎉
           </h2>
           <div className='mb-6'>
             <div className='text-6xl mb-4'>🏆</div>
             <p className='text-xl text-gray-700 mb-2'>
-              Level {currentLevelId?.split("-")[1]} abgeschlossen!
+              Stufe {currentLevelId} abgeschlossen!
             </p>
             <div className='bg-yellow-100 border-2 border-yellow-300 rounded-xl p-4 mb-4'>
               <p className='text-lg font-bold text-yellow-800'>
@@ -791,8 +791,7 @@ const MathTrainerApp = () => {
             </div>
             {levelCompleteData.nextLevelUnlocked && (
               <p className='text-green-600 font-semibold'>
-                Level {levelCompleteData.nextLevelUnlocked.split("-")[1]}{" "}
-                freigeschaltet!
+                Stufe {levelCompleteData.nextLevelUnlocked} freigeschaltet!
               </p>
             )}
           </div>
@@ -805,7 +804,7 @@ const MathTrainerApp = () => {
                 }}
                 className='w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-lg transition'
               >
-                Nächstes Level starten
+                Nächste Stufe starten
               </button>
             )}
             <button
@@ -841,9 +840,7 @@ const MathTrainerApp = () => {
               {mode === "practice"
                 ? "Freies Üben"
                 : mode === "level-practice"
-                ? `Level ${currentLevelId?.split("-")[1]} - ${
-                    levelSystem.getLevel(currentLevelId)?.title || ""
-                  }`
+                ? `Stufe ${currentLevelId?.split("-")[1]} - ${currentLevelId}`
                 : `Quiz: Frage ${quizIndex + 1}/10`}
             </h2>
             <button
@@ -883,17 +880,17 @@ const MathTrainerApp = () => {
                 <Volume2 size={24} />
               </button>
               {settings.kopfrechnenMode ? (
-                <div className='text-7xl font-bold text-purple-600'>
+                <div className='text-5xl font-bold text-purple-600'>
                   Kopfrechnen
                 </div>
               ) : settings.showEquation ? (
-                <div className='text-7xl font-bold text-gray-800'>
+                <div className='text-5xl font-bold text-gray-800'>
                   {currentProblem.num1}{" "}
                   {operationSymbols[currentProblem.operation]}{" "}
                   {currentProblem.num2} = ?
                 </div>
               ) : (
-                <div className='text-5xl font-bold text-gray-500 italic'>
+                <div className='text-4xl font-bold text-gray-500 italic'>
                   Gut zuhören! 👂
                 </div>
               )}
@@ -909,7 +906,7 @@ const MathTrainerApp = () => {
               onKeyPress={handleKeyPress}
               placeholder='Deine Antwort...'
               disabled={feedback !== null}
-              className='w-full p-6 text-5xl text-center border-4 border-purple-300 rounded-xl focus:outline-none focus:border-purple-500 disabled:bg-gray-100'
+              className='w-full p-4 text-3xl text-center border-4 border-purple-300 rounded-xl focus:outline-none focus:border-purple-500 disabled:bg-gray-100'
             />
           </div>
 
@@ -917,7 +914,7 @@ const MathTrainerApp = () => {
             <button
               onClick={checkAnswer}
               disabled={!userAnswer}
-              className='w-full py-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl font-bold text-2xl transition shadow-lg disabled:cursor-not-allowed'
+              className='w-full py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl font-bold text-xl transition shadow-lg disabled:cursor-not-allowed'
             >
               Antwort prüfen
             </button>
@@ -930,11 +927,11 @@ const MathTrainerApp = () => {
                     : "bg-gradient-to-r from-red-100 to-red-200 border-4 border-red-400"
                 }`}
               >
-                <p className='text-4xl font-bold mb-4'>{feedback.message}</p>
+                <p className='text-2xl font-bold mb-2'>{feedback.message}</p>
                 {!feedback.isCorrect && (
-                  <p className='text-2xl'>
+                  <p className='text-lg'>
                     Die richtige Antwort ist:{" "}
-                    <span className='font-bold text-4xl'>
+                    <span className='font-bold text-2xl'>
                       {feedback.correctAnswer}
                     </span>
                   </p>
@@ -943,7 +940,7 @@ const MathTrainerApp = () => {
 
               <button
                 onClick={nextQuestion}
-                className='w-full py-6 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl font-bold text-2xl transition shadow-lg flex items-center justify-center gap-2'
+                className='w-full py-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl font-bold text-xl transition shadow-lg flex items-center justify-center gap-2'
               >
                 {mode === "quiz" && quizIndex === quizQuestions.length - 1 ? (
                   <>Ergebnisse anzeigen</>
@@ -984,7 +981,7 @@ const MathTrainerApp = () => {
                   ></div>
                 </div>
                 <p className='text-center text-base font-medium text-gray-600 mt-2'>
-                  80% richtige Antworten sind nötig um das Level zu schaffen!
+                  80% richtige Antworten sind nötig um die Stufe zu schaffen!
                 </p>
               </div>
             ) : (
