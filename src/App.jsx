@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Volume2, Settings, Award, Play, RotateCcw } from "lucide-react";
+import {
+  Volume2,
+  Settings,
+  Award,
+  Play,
+  RotateCcw,
+  Target,
+} from "lucide-react";
+import LevelSystem from "./levelSystem.js";
+import LevelSelector from "./LevelSelector.jsx";
 
 const MathTrainerApp = () => {
+  const [levelSystem] = useState(() => new LevelSystem());
   const [settings, setSettings] = useState({
     operation: "+",
     difficulty: "medium",
@@ -13,7 +23,7 @@ const MathTrainerApp = () => {
     kopfrechnenMode: true,
   });
 
-  const [mode, setMode] = useState("menu"); // menu, practice, quiz, results
+  const [mode, setMode] = useState("menu"); // menu, levels, practice, quiz, results, level-practice
   const [currentProblem, setCurrentProblem] = useState(null);
   const [userAnswer, setUserAnswer] = useState("");
   const [feedback, setFeedback] = useState(null);
@@ -22,6 +32,15 @@ const MathTrainerApp = () => {
   const [quizIndex, setQuizIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [availableVoices, setAvailableVoices] = useState([]);
+
+  // Level system state
+  const [currentLevelId, setCurrentLevelId] = useState(null);
+  const [levelProblems, setLevelProblems] = useState([]);
+  const [levelProblemIndex, setLevelProblemIndex] = useState(0);
+  const [levelScore, setLevelScore] = useState({ correct: 0, total: 0 });
+  const [showLevelComplete, setShowLevelComplete] = useState(false);
+  const [levelCompleteData, setLevelCompleteData] = useState(null);
+
   const inputRef = useRef(null);
 
   // Load available voices
@@ -265,6 +284,94 @@ const MathTrainerApp = () => {
     setTimeout(() => speakProblem(questions[0], inputRef), 300);
   };
 
+  // Level System Functions
+  const startLevelPractice = (levelId) => {
+    const level = levelSystem.getLevel(levelId);
+    if (!level) return;
+
+    levelSystem.setCurrentLevel(levelId);
+    setCurrentLevelId(levelId);
+
+    const problems = levelSystem.generateProblems(levelId);
+    setLevelProblems(problems);
+    setLevelProblemIndex(0);
+    setLevelScore({ correct: 0, total: 0 });
+
+    if (problems.length > 0) {
+      const firstProblem = parseProblem(problems[0]);
+      setCurrentProblem(firstProblem);
+      setMode("level-practice");
+      setUserAnswer("");
+      setFeedback(null);
+
+      // Handle special level 9 with explanation
+      if (levelId === "1-9") {
+        speakLevelExplanation(level);
+      } else {
+        setTimeout(() => speakProblem(firstProblem, inputRef), 300);
+      }
+    }
+  };
+
+  const parseProblem = (problemStr) => {
+    const match = problemStr.match(/(\d+)([\+\-\*\/])(\d+)/);
+    if (!match) return null;
+
+    const [, num1, operation, num2] = match;
+    const n1 = parseInt(num1);
+    const n2 = parseInt(num2);
+    let answer;
+
+    switch (operation) {
+      case "+":
+        answer = n1 + n2;
+        break;
+      case "-":
+        answer = n1 - n2;
+        break;
+      case "*":
+        answer = n1 * n2;
+        break;
+      case "/":
+        answer = n1 / n2;
+        break;
+      default:
+        return null;
+    }
+
+    return { num1: n1, num2: n2, operation, answer };
+  };
+
+  const speakLevelExplanation = (level) => {
+    if ("speechSynthesis" in window && level.explanation) {
+      const utterance = new SpeechSynthesisUtterance(level.explanation);
+      utterance.lang = "de-DE";
+      utterance.rate = settings.speechRate;
+
+      if (settings.voiceURI) {
+        const voices = window.speechSynthesis.getVoices();
+        const selectedVoice = voices.find(
+          (v) => v.voiceURI === settings.voiceURI
+        );
+        if (selectedVoice) utterance.voice = selectedVoice;
+      }
+
+      utterance.onend = () => {
+        setTimeout(() => {
+          if (levelProblems.length > 0) {
+            const firstProblem = parseProblem(levelProblems[0]);
+            if (firstProblem) {
+              speakProblem(firstProblem, inputRef);
+            }
+          }
+        }, 1000);
+      };
+
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   const checkAnswer = () => {
     const isCorrect = parseInt(userAnswer) === currentProblem.answer;
     const messages =
@@ -286,6 +393,13 @@ const MathTrainerApp = () => {
         correct: prev.correct + (isCorrect ? 1 : 0),
         total: prev.total + 1,
       }));
+    } else if (mode === "level-practice") {
+      // Record answer in level system
+      levelSystem.recordAnswer(currentLevelId, isCorrect);
+      setLevelScore((prev) => ({
+        correct: prev.correct + (isCorrect ? 1 : 0),
+        total: prev.total + 1,
+      }));
     } else if (mode === "quiz") {
       setScore((prev) => ({
         correct: prev.correct + (isCorrect ? 1 : 0),
@@ -301,6 +415,33 @@ const MathTrainerApp = () => {
       setUserAnswer("");
       setFeedback(null);
       setTimeout(() => speakProblem(problem, inputRef), 300);
+    } else if (mode === "level-practice") {
+      const nextIndex = levelProblemIndex + 1;
+      if (nextIndex < levelProblems.length) {
+        setLevelProblemIndex(nextIndex);
+        const nextProblem = parseProblem(levelProblems[nextIndex]);
+        setCurrentProblem(nextProblem);
+        setUserAnswer("");
+        setFeedback(null);
+        setTimeout(() => speakProblem(nextProblem, inputRef), 300);
+      } else {
+        // Level completed - check if all answers were correct
+        if (levelScore.correct + 1 === levelProblems.length) {
+          // +1 because we need to include the current correct answer
+          const completionData = levelSystem.completeLevel(currentLevelId);
+          setLevelCompleteData(completionData);
+          setShowLevelComplete(true);
+        } else {
+          // Not all correct, restart level
+          setLevelProblemIndex(0);
+          const firstProblem = parseProblem(levelProblems[0]);
+          setCurrentProblem(firstProblem);
+          setLevelScore({ correct: 0, total: 0 });
+          setUserAnswer("");
+          setFeedback(null);
+          setTimeout(() => speakProblem(firstProblem, inputRef), 300);
+        }
+      }
     } else if (mode === "quiz") {
       if (quizIndex < quizQuestions.length - 1) {
         const nextIdx = quizIndex + 1;
@@ -527,11 +668,19 @@ const MathTrainerApp = () => {
 
             <div className='space-y-4'>
               <button
+                onClick={() => setMode("levels")}
+                className='w-full py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition shadow-lg'
+              >
+                <Target size={24} />
+                Level Training (16 Stufen)
+              </button>
+
+              <button
                 onClick={startPractice}
                 className='w-full py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition shadow-lg'
               >
                 <Play size={24} />
-                Übungsmodus starten
+                Freies Üben
               </button>
 
               <button
@@ -539,7 +688,7 @@ const MathTrainerApp = () => {
                 className='w-full py-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition shadow-lg'
               >
                 <Award size={24} />
-                Quiz starten (10 Fragen)
+                Quiz (10 Fragen)
               </button>
             </div>
 
@@ -554,6 +703,16 @@ const MathTrainerApp = () => {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (mode === "levels") {
+    return (
+      <LevelSelector
+        levelSystem={levelSystem}
+        onLevelSelect={startLevelPractice}
+        onBack={() => setMode("menu")}
+      />
     );
   }
 
@@ -600,6 +759,68 @@ const MathTrainerApp = () => {
     );
   }
 
+  // Level completion modal
+  if (showLevelComplete && levelCompleteData) {
+    return (
+      <div className='min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 p-8 flex items-center justify-center'>
+        <div className='bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center'>
+          <h2 className='text-3xl font-bold mb-4 text-green-600'>
+            Level geschafft! 🎉
+          </h2>
+          <div className='mb-6'>
+            <div className='text-6xl mb-4'>🏆</div>
+            <p className='text-xl text-gray-700 mb-2'>
+              Level {currentLevelId?.split("-")[1]} abgeschlossen!
+            </p>
+            <div className='bg-yellow-100 border-2 border-yellow-300 rounded-xl p-4 mb-4'>
+              <p className='text-lg font-bold text-yellow-800'>
+                Dein Code: {levelCompleteData.unlockCode}
+              </p>
+              <p className='text-sm text-yellow-700'>Merke dir diesen Code!</p>
+            </div>
+            {levelCompleteData.nextLevelUnlocked && (
+              <p className='text-green-600 font-semibold'>
+                Level {levelCompleteData.nextLevelUnlocked.split("-")[1]}{" "}
+                freigeschaltet!
+              </p>
+            )}
+          </div>
+          <div className='space-y-3'>
+            {levelCompleteData.nextLevelUnlocked && (
+              <button
+                onClick={() => {
+                  setShowLevelComplete(false);
+                  startLevelPractice(levelCompleteData.nextLevelUnlocked);
+                }}
+                className='w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-lg transition'
+              >
+                Nächstes Level starten
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setShowLevelComplete(false);
+                setMode("levels");
+              }}
+              className='w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-lg transition'
+            >
+              Level Auswahl
+            </button>
+            <button
+              onClick={() => {
+                setShowLevelComplete(false);
+                setMode("menu");
+              }}
+              className='w-full py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-bold text-lg transition'
+            >
+              Hauptmenü
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className='min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 p-8'>
       <div className='max-w-2xl mx-auto'>
@@ -607,7 +828,11 @@ const MathTrainerApp = () => {
           <div className='flex justify-between items-center mb-6'>
             <h2 className='text-2xl font-bold text-purple-600'>
               {mode === "practice"
-                ? "Übungsmodus"
+                ? "Freies Üben"
+                : mode === "level-practice"
+                ? `Level ${currentLevelId?.split("-")[1]} - ${
+                    levelSystem.getLevel(currentLevelId)?.title || ""
+                  }`
                 : `Quiz: Frage ${quizIndex + 1}/10`}
             </h2>
             <button
@@ -727,9 +952,35 @@ const MathTrainerApp = () => {
           )}
 
           <div className='mt-6 p-4 bg-gray-50 rounded-xl'>
-            <p className='text-center text-gray-600'>
-              Richtig: {score.correct} | Gesamt: {score.total}
-            </p>
+            {mode === "level-practice" ? (
+              <div>
+                <div className='flex justify-between items-center mb-2'>
+                  <span className='text-gray-600'>
+                    Aufgabe {levelProblemIndex + 1} von {levelProblems.length}
+                  </span>
+                  <span className='text-gray-600'>
+                    Richtig: {levelScore.correct} | Gesamt: {levelScore.total}
+                  </span>
+                </div>
+                <div className='w-full bg-gray-200 rounded-full h-2'>
+                  <div
+                    className='bg-blue-500 h-2 rounded-full transition-all duration-300'
+                    style={{
+                      width: `${
+                        ((levelProblemIndex + 1) / levelProblems.length) * 100
+                      }%`,
+                    }}
+                  ></div>
+                </div>
+                <p className='text-center text-sm text-gray-500 mt-2'>
+                  Alle Aufgaben müssen richtig sein um das Level zu schaffen!
+                </p>
+              </div>
+            ) : (
+              <p className='text-center text-gray-600'>
+                Richtig: {score.correct} | Gesamt: {score.total}
+              </p>
+            )}
           </div>
         </div>
       </div>
