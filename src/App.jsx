@@ -781,7 +781,7 @@ const MathTrainerApp = () => {
           <div className='mb-6'>
             <div className='text-6xl mb-4'>🏆</div>
             <p className='text-xl text-gray-700 mb-2'>
-              Stufe {currentLevelId} abgeschlossen!
+              Stufe {currentLevelId?.split("-")[1]} abgeschlossen!
             </p>
             <div className='bg-yellow-100 border-2 border-yellow-300 rounded-xl p-4 mb-4'>
               <p className='text-lg font-bold text-yellow-800'>
@@ -791,7 +791,8 @@ const MathTrainerApp = () => {
             </div>
             {levelCompleteData.nextLevelUnlocked && (
               <p className='text-green-600 font-semibold'>
-                Stufe {levelCompleteData.nextLevelUnlocked} freigeschaltet!
+                Stufe {levelCompleteData.nextLevelUnlocked.split("-")[1]}{" "}
+                freigeschaltet!
               </p>
             )}
           </div>
@@ -840,7 +841,7 @@ const MathTrainerApp = () => {
               {mode === "practice"
                 ? "Freies Üben"
                 : mode === "level-practice"
-                ? `Stufe ${currentLevelId?.split("-")[1]} - ${currentLevelId}`
+                ? `Stufe ${currentLevelId?.split("-")[1]}`
                 : `Quiz: Frage ${quizIndex + 1}/10`}
             </h2>
             <button
