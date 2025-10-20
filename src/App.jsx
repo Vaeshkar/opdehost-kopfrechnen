@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import LevelSystem from "./levelSystem.js";
 import LevelSelector from "./LevelSelector.jsx";
+import ttsService from "./ttsService.js";
 
 const MathTrainerApp = () => {
   const [levelSystem] = useState(() => new LevelSystem());
@@ -31,7 +32,6 @@ const MathTrainerApp = () => {
   const [quizQuestions, setQuizQuestions] = useState([]);
   const [quizIndex, setQuizIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
-  const [availableVoices, setAvailableVoices] = useState([]);
 
   // Level system state
   const [currentLevelId, setCurrentLevelId] = useState(null);
@@ -43,32 +43,20 @@ const MathTrainerApp = () => {
 
   const inputRef = useRef(null);
 
-  // Load available voices
+  // Initialize TTS service when component mounts
   useEffect(() => {
-    const loadVoices = () => {
-      const voices = window.speechSynthesis.getVoices();
-      const germanVoices = voices.filter((voice) =>
-        voice.lang.startsWith("de")
-      );
-      setAvailableVoices(germanVoices);
-
-      // Always try to use Google Deutsch voice
-      const googleGermanVoice = voices.find(
-        (voice) => voice.name.includes("Google") && voice.lang.startsWith("de")
-      );
-      const fallbackGermanVoice = germanVoices[0];
-      const selectedVoice = googleGermanVoice || fallbackGermanVoice;
-
-      if (selectedVoice) {
-        setSettings((prev) => ({
-          ...prev,
-          voiceURI: selectedVoice.voiceURI,
-        }));
+    // Preload common phrases for better performance
+    const initializeTTS = async () => {
+      try {
+        console.log("🔄 Initializing OpenAI TTS...");
+        await ttsService.preloadCommonPhrases();
+        console.log("✅ TTS initialized successfully");
+      } catch (error) {
+        console.warn("⚠️ TTS initialization failed, will use fallback:", error);
       }
     };
 
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    initializeTTS();
   }, []);
 
   const difficultyRanges = {
@@ -186,8 +174,8 @@ const MathTrainerApp = () => {
     return { num1, num2, operation, answer };
   };
 
-  const speakProblem = (problem, inputRef) => {
-    if ("speechSynthesis" in window) {
+  const speakProblem = async (problem, inputRef) => {
+    try {
       const operationWords = {
         "+": "plus",
         "-": "minus",
@@ -198,68 +186,44 @@ const MathTrainerApp = () => {
       const text = `Was ist ${problem.num1} ${
         operationWords[problem.operation]
       } ${problem.num2}?`;
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "de-DE";
-      utterance.rate = settings.speechRate;
 
-      // Set selected voice
-      if (settings.voiceURI) {
-        const voices = window.speechSynthesis.getVoices();
-        const selectedVoice = voices.find(
-          (v) => v.voiceURI === settings.voiceURI
-        );
-        if (selectedVoice) {
-          utterance.voice = selectedVoice;
-        }
-      }
+      console.log("🎤 Speaking problem:", text);
+
+      // Use OpenAI TTS with German voice
+      await ttsService.speak(text, "alloy");
 
       // Focus input field after speech ends
-      utterance.onend = () => {
-        if (inputRef && inputRef.current) {
-          inputRef.current.focus();
-        }
-      };
-
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
+      if (inputRef && inputRef.current) {
+        inputRef.current.focus();
+      }
+    } catch (error) {
+      console.error("❌ TTS failed for problem:", error);
+      // Fallback to browser TTS is handled in ttsService
     }
   };
 
-  const speakFeedback = (text, isCorrect) => {
-    if ("speechSynthesis" in window) {
+  const speakFeedback = async (text, isCorrect) => {
+    try {
+      // Clean text from emojis for better TTS
       const cleanText = text.replace(
         /[🌟🎉⭐💪🌈😊🎯✓✗👑🎈🎊🚀🐰🐸🦊🐻📚📝✏️📖🤔📐🔢📏]/g,
         ""
       );
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.lang = "de-DE";
-      utterance.rate = settings.speechRate;
 
-      // Set selected voice
-      if (settings.voiceURI) {
-        const voices = window.speechSynthesis.getVoices();
-        const selectedVoice = voices.find(
-          (v) => v.voiceURI === settings.voiceURI
-        );
-        if (selectedVoice) {
-          utterance.voice = selectedVoice;
-        }
-      }
+      console.log("🎤 Speaking feedback:", cleanText);
 
-      // Add emotion through pitch variation
-      utterance.pitch = isCorrect ? 1.2 : 0.9;
+      // Use German TTS with emotion for feedback
+      await ttsService.speak(cleanText, "alloy", isCorrect);
 
       // Auto-advance to next question after feedback if enabled
       if (settings.autoPlayNext) {
-        utterance.onend = () => {
-          setTimeout(() => {
-            nextQuestion();
-          }, 1500);
-        };
+        setTimeout(() => {
+          nextQuestion();
+        }, 1500);
       }
-
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.error("❌ TTS failed for feedback:", error);
+      // Fallback to browser TTS is handled in ttsService
     }
   };
 
